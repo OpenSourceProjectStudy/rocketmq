@@ -339,27 +339,37 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
             @Override
             public void onSuccess(PullResult pullResult) {
                 if (pullResult != null) {
+                    // 处理 pullResult, 进行消息解码、过滤以及设置其他属性的操作
                     pullResult = DefaultMQPushConsumerImpl.this.pullAPIWrapper.processPullResult(pullRequest.getMessageQueue(), pullResult,
                         subscriptionData);
 
                     switch (pullResult.getPullStatus()) {
                         case FOUND:
+                            // 拉取的起始 offset
                             long prevRequestOffset = pullRequest.getNextOffset();
+                            // 设置下一次拉取的 offset
                             pullRequest.setNextOffset(pullResult.getNextBeginOffset());
+                            // 计算拉取耗时
                             long pullRT = System.currentTimeMillis() - beginTimestamp;
                             DefaultMQPushConsumerImpl.this.getConsumerStatsManager().incPullRT(pullRequest.getConsumerGroup(),
                                 pullRequest.getMessageQueue().getTopic(), pullRT);
 
                             long firstMsgOffset = Long.MAX_VALUE;
                             if (pullResult.getMsgFoundList() == null || pullResult.getMsgFoundList().isEmpty()) {
+                                // 立即将拉取请求再次放入 PullMessageService 的 pullRequestQueue 中, 重新拉取新的消息
                                 DefaultMQPushConsumerImpl.this.executePullRequestImmediately(pullRequest);
                             } else {
+                                // 获取第一个消息的 offset
                                 firstMsgOffset = pullResult.getMsgFoundList().get(0).getQueueOffset();
 
                                 DefaultMQPushConsumerImpl.this.getConsumerStatsManager().incPullTPS(pullRequest.getConsumerGroup(),
                                     pullRequest.getMessageQueue().getTopic(), pullResult.getMsgFoundList().size());
 
+                                // 将拉取到的所有消息, 存入对应的 processQueue 处理队列内部的 msgTreeMap 中
                                 boolean dispatchToConsume = processQueue.putMessage(pullResult.getMsgFoundList());
+
+                                // 通过 consumeMessageService 将拉取到的消息构建为 ConsumeRequest, 然后通过内部的 consumeExecutor 线程池消费消息
+                                // consumeMessageService 有 ConsumeMessageConcurrentlyService 并发消费和 ConsumeMessageOrderlyService 顺序消费两种实现
                                 DefaultMQPushConsumerImpl.this.consumeMessageService.submitConsumeRequest(
                                     pullResult.getMsgFoundList(),
                                     processQueue,

@@ -739,6 +739,7 @@ public class MQClientAPIImpl {
                 RemotingCommand response = responseFuture.getResponseCommand();
                 if (response != null) {
                     try {
+                        // 处理拉取消息的响应
                         PullResult pullResult = MQClientAPIImpl.this.processPullResponse(response, addr);
                         assert pullResult != null;
                         pullCallback.onSuccess(pullResult);
@@ -791,9 +792,11 @@ public class MQClientAPIImpl {
                 throw new MQBrokerException(response.getCode(), response.getRemark(), addr);
         }
 
+        // 解析响应头
         PullMessageResponseHeader responseHeader =
             (PullMessageResponseHeader) response.decodeCommandCustomHeader(PullMessageResponseHeader.class);
 
+        // 根据响应的数据创建PullResultExt对象返回，此时拉取到的消息还是一个字节数组
         return new PullResultExt(pullStatus, responseHeader.getNextBeginOffset(), responseHeader.getMinOffset(),
             responseHeader.getMaxOffset(), null, responseHeader.getSuggestWhichBrokerId(), response.getBody());
     }
