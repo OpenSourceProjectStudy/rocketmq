@@ -77,21 +77,29 @@ public class ProcessQueue {
      * @param pushConsumer
      */
     public void cleanExpiredMsg(DefaultMQPushConsumer pushConsumer) {
+
+        // 如果是顺序消费，直接返回，只有并发消费才会清理
         if (pushConsumer.getDefaultMQPushConsumerImpl().isConsumeOrderly()) {
             return;
         }
 
+        // 一次循环最多处理 16 个消息
         int loop = msgTreeMap.size() < 16 ? msgTreeMap.size() : 16;
         for (int i = 0; i < loop; i++) {
             MessageExt msg = null;
             try {
+                // 加锁
                 this.treeMapLock.readLock().lockInterruptibly();
                 try {
                     if (!msgTreeMap.isEmpty()) {
+                        // 获取 msgTreeMap 中的第一次元素的起始消费时间，msgTreeMap 是一个红黑树，第一个节点就是 offset 最小的节点
                         String consumeStartTimeStamp = MessageAccessor.getConsumeStartTimeStamp(msgTreeMap.firstEntry().getValue());
+
+                        // 如果消费时间距离现在时间超过默认 15min，那么获取这个 msg
                         if (StringUtils.isNotEmpty(consumeStartTimeStamp) && System.currentTimeMillis() - Long.parseLong(consumeStartTimeStamp) > pushConsumer.getConsumeTimeout() * 60 * 1000) {
                             msg = msgTreeMap.firstEntry().getValue();
                         } else {
+                            // 如果没有被消费，或者消费时间距离现在时间不超过默认 15min，则结束循环
                             break;
                         }
                     } else {
@@ -105,14 +113,16 @@ public class ProcessQueue {
             }
 
             try {
-
+                // 将消息发回 broker 延迟 topic，将在给定延迟时间（默认从level3，即10s开始）之后进行重试消费
                 pushConsumer.sendMessageBack(msg, 3);
                 log.info("send expire msg back. topic={}, msgId={}, storeHost={}, queueId={}, queueOffset={}", msg.getTopic(), msg.getMsgId(), msg.getStoreHost(), msg.getQueueId(), msg.getQueueOffset());
                 try {
                     this.treeMapLock.writeLock().lockInterruptibly();
                     try {
+                        // 如果这个消息还没有被消费完
                         if (!msgTreeMap.isEmpty() && msg.getQueueOffset() == msgTreeMap.firstKey()) {
                             try {
+                                // 移除消息
                                 removeMessage(Collections.singletonList(msg));
                             } catch (Exception e) {
                                 log.error("send expired msg exception", e);

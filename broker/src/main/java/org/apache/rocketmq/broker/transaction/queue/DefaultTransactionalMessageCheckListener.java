@@ -44,7 +44,9 @@ public class DefaultTransactionalMessageCheckListener extends AbstractTransactio
         log.error("MsgExt:{} has been checked too many times, so discard it by moving it to system topic TRANS_CHECK_MAXTIME_TOPIC", msgExt);
 
         try {
+            // half 消息转换为内部消息对象，topic 为 TRANS_CHECK_MAX_TIME_TOPIC
             MessageExtBrokerInner brokerInner = toMessageExtBrokerInner(msgExt);
+            // 将消息存入该 topic
             PutMessageResult putMessageResult = this.getBrokerController().getMessageStore().putMessage(brokerInner);
             if (putMessageResult != null && putMessageResult.getPutMessageStatus() == PutMessageStatus.PUT_OK) {
                 log.info("Put checked-too-many-time half message to TRANS_CHECK_MAXTIME_TOPIC OK. Restored in queueOffset={}, " +
@@ -59,6 +61,7 @@ public class DefaultTransactionalMessageCheckListener extends AbstractTransactio
     }
 
     private MessageExtBrokerInner toMessageExtBrokerInner(MessageExt msgExt) {
+        // 创建或者获取 topic 信息，被丢弃的 half 消息将会存入 TRANS_CHECK_MAX_TIME_TOPIC 这个固定的 topic
         TopicConfig topicConfig = this.getBrokerController().getTopicConfigManager().createTopicOfTranCheckMaxTime(TCMT_QUEUE_NUMS, PermName.PERM_READ | PermName.PERM_WRITE);
         int queueId = ThreadLocalRandom.current().nextInt(99999999) % TCMT_QUEUE_NUMS;
         MessageExtBrokerInner inner = new MessageExtBrokerInner();

@@ -30,6 +30,7 @@ public class TransactionMQProducer extends DefaultMQProducer {
 
     private ExecutorService executorService;
 
+    // 事务监听器, Broker 通过这个查询本地事务的状态
     private TransactionListener transactionListener;
 
     public TransactionMQProducer() {
@@ -57,6 +58,7 @@ public class TransactionMQProducer extends DefaultMQProducer {
 
     @Override
     public void start() throws MQClientException {
+        // 初始化事务环境, 主要是执行的线程池 (存放 Runnable 的队列)
         this.defaultMQProducerImpl.initTransactionEnv();
         super.start();
     }
@@ -86,6 +88,7 @@ public class TransactionMQProducer extends DefaultMQProducer {
     @Override
     public TransactionSendResult sendMessageInTransaction(final Message msg,
         final Object arg) throws MQClientException {
+        // Broker 通过这个查询本地事务的状态
         if (null == this.transactionListener) {
             throw new MQClientException("TransactionListener is null", null);
         }

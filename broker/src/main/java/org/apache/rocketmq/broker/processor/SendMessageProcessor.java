@@ -184,6 +184,9 @@ public class SendMessageProcessor extends AbstractSendMessageProcessor {
 
         int delayLevel = requestHeader.getDelayLevel();
 
+        // 从订阅关系中获取最大重试次数
+        // 如果版本大于3.4.9，那么从请求头中获取最大重试次数，这是客户端传递过来的
+        // 并发消费模式最大 16，顺序消费默认最大Integer.MAX_VALUE
         int maxReconsumeTimes = subscriptionGroupConfig.getRetryMaxTimes();
         if (request.getVersion() >= MQVersion.Version.V3_4_9.ordinal()) {
             Integer times = requestHeader.getMaxReconsumeTimes();
@@ -194,9 +197,13 @@ public class SendMessageProcessor extends AbstractSendMessageProcessor {
 
         if (msgExt.getReconsumeTimes() >= maxReconsumeTimes
             || delayLevel < 0) {
+            // 如果消息已重试次数 大于等于 最大重试次数，或者延迟等级小于 0，那么消息不再重试，直接发往死信队列
             newTopic = MixAll.getDLQTopic(requestHeader.getGroup());
             queueIdInt = ThreadLocalRandom.current().nextInt(99999999) % DLQ_NUMS_PER_GROUP;
 
+            // 获取该consumerGroup对应的死信队列topic
+            // RocketMQ 会为每个消费组都设置一个 Topic 名称为 %DLQ%+consumerGroup 的死信队列 topic
+            // 这里需要注意的是，和重试队列一样，这里的死信队列是针对消费组，而不是针对每个 Topic 设置的
             topicConfig = this.brokerController.getTopicConfigManager().createTopicInSendMessageBackMethod(newTopic,
                     DLQ_NUMS_PER_GROUP,
                     PermName.PERM_WRITE | PermName.PERM_READ, 0);
@@ -206,15 +213,22 @@ public class SendMessageProcessor extends AbstractSendMessageProcessor {
                 response.setRemark("topic[" + newTopic + "] not exist");
                 return CompletableFuture.completedFuture(response);
             }
+            // 设置消息延迟等级 0，表示不会延迟，不进入延迟 topic
             msgExt.setDelayTimeLevel(0);
         } else {
+            // 没有达到最大重试次数，并且延迟等级不小于 0
             if (0 == delayLevel) {
+                // 如果参数中的 delayLevel = 0，表示 broker 控制延迟等级
+                // 3 + 已重试的次数 ，即默认从 level3 开始，即从延迟 10s 开始
                 delayLevel = 3 + msgExt.getReconsumeTimes();
             }
+            // 如果参数中的 delayLevel > 0，表示 consumer 控制延迟等级
+            // 那么参数是多少，等级就设置为多少
             msgExt.setDelayTimeLevel(delayLevel);
         }
 
         MessageExtBrokerInner msgInner = new MessageExtBrokerInner();
+        // 设置的 topic 为重试 topic 或者死信 topic
         msgInner.setTopic(newTopic);
         msgInner.setBody(msgExt.getBody());
         msgInner.setFlag(msgExt.getFlag());
@@ -233,6 +247,8 @@ public class SendMessageProcessor extends AbstractSendMessageProcessor {
         MessageAccessor.setOriginMessageId(msgInner, UtilAll.isBlank(originMsgId) ? msgExt.getMsgId() : originMsgId);
         msgInner.setPropertiesString(MessageDecoder.messageProperties2String(msgExt.getProperties()));
 
+        // 在该方法中，将会处理延迟消息的逻辑。如果是延迟消息，即DelayTimeLevel大于0
+        // 那么替换 topic 为 SCHEDULE_TOPIC_XXXX，替换 queueId 为延迟队列 id， id = level - 1，保存真实 topic 和 queueId，方便后面恢复
         CompletableFuture<PutMessageResult> putMessageResult = this.brokerController.getMessageStore().asyncPutMessage(msgInner);
         return putMessageResult.thenApply(r -> {
             if (r != null) {
@@ -316,8 +332,10 @@ public class SendMessageProcessor extends AbstractSendMessageProcessor {
         }
 
         CompletableFuture<PutMessageResult> putMessageResult = null;
+        // TRAN_MSG 属性值为 true, 表示为事务消息
         String transFlag = origProps.get(MessageConst.PROPERTY_TRANSACTION_PREPARED);
         if (Boolean.parseBoolean(transFlag)) {
+            // 判断是否需要拒绝事务消息，如果需要拒绝，则返回 NO_PERMISSION 异常 (通过配置, 默认为 false)
             if (this.brokerController.getBrokerConfig().isRejectTransactionMessage()) {
                 response.setCode(ResponseCode.NO_PERMISSION);
                 response.setRemark(

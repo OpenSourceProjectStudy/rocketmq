@@ -80,10 +80,13 @@ public class RequestCode {
     public static final int UNREGISTER_CLIENT = 35;
 
     /**
-     * 消费者响应消息
+     * 消费者发送消息会 Broker
      */
     public static final int CONSUMER_SEND_MSG_BACK = 36;
 
+    /**
+     * 事务消息提交或者回滚
+     */
     public static final int END_TRANSACTION = 37;
 
     /**
@@ -92,6 +95,9 @@ public class RequestCode {
      */
     public static final int GET_CONSUMER_LIST_BY_GROUP = 38;
 
+    /**
+     * Broker 向 Producer 检查事务消息执行结果
+     */
     public static final int CHECK_TRANSACTION_STATE = 39;
 
     /**
