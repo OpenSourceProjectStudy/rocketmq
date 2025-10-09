@@ -16,8 +16,6 @@
  */
 package org.apache.rocketmq.common;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import org.apache.rocketmq.common.annotation.ImportantField;
 import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.common.constant.PermName;
@@ -25,6 +23,9 @@ import org.apache.rocketmq.common.topic.TopicValidator;
 import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.logging.InternalLoggerFactory;
 import org.apache.rocketmq.remoting.common.RemotingUtil;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 public class BrokerConfig {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.COMMON_LOGGER_NAME);
@@ -54,6 +55,10 @@ public class BrokerConfig {
     private String messageStorePlugIn = "";
     @ImportantField
     private String msgTraceTopicName = TopicValidator.RMQ_SYS_TRACE_TOPIC;
+
+    /**
+     * 消息轨迹功能开关
+     */
     @ImportantField
     private boolean traceTopicEnable = false;
     /**
@@ -162,7 +167,7 @@ public class BrokerConfig {
     private boolean forceRegister = true;
 
     /**
-     * Broker 和 NameServer 之间注册 Topic 的间隔时间, 子啊 10,000 和 60,000 之间，默认 30,000 毫秒
+     * Broker 和 NameServer 之间注册 Topic 的间隔时间, 取值 10,000 和 60,000 之间，默认 30,000 毫秒
      */
     private int registerNameServerPeriod = 1000 * 30;
 

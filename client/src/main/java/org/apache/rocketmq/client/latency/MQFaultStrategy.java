@@ -30,6 +30,7 @@ public class MQFaultStrategy {
      * 是否启用延迟故障功能
      * 对于高延迟的、有故障的 broker，都会保存下来，并有一个不可用时间段，发送消息的时候都会临时避开这个 broker
      * 没启用的情况， 顺着已有的队列循环, 会存在上次使用了 broker-a 的队列 1,下一次使用到 broker-a 的队列 2
+     * 可以通过 producer.setSendLatencyFaultEnable(true); 来启用
      */
     private boolean sendLatencyFaultEnable = false;
 

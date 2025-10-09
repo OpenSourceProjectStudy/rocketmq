@@ -92,6 +92,10 @@ public class MQClientInstance {
     private final int instanceIndex;
     private final String clientId;
     private final long bootTimestamp = System.currentTimeMillis();
+
+    /**
+     * Map<生产组, 生产客户端>
+     */
     private final ConcurrentMap<String/* group */, MQProducerInner> producerTable = new ConcurrentHashMap<String, MQProducerInner>();
 
     /**
@@ -644,7 +648,7 @@ public class MQClientInstance {
                 try {
                     TopicRouteData topicRouteData;
                     if (isDefault && defaultMQProducer != null) {
-                        // 默认的 Topic 名称 TBW102, 如何 Broker 支持自动创建 Topic, 根据这个 Topic 的配置进行 Topic 的创建
+                        // 默认的 Topic 名称 TBW102, 如果 Broker 支持自动创建 Topic, 根据这个 Topic 的配置进行 Topic 的创建
                         topicRouteData = this.mQClientAPIImpl.getDefaultTopicRouteInfoFromNameServer(defaultMQProducer.getCreateTopicKey(),
                                 clientConfig.getMqClientApiTimeout());
                         if (topicRouteData != null) {

@@ -16,19 +16,35 @@
  */
 package org.apache.rocketmq.client.impl.producer;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.rocketmq.client.common.ThreadLocalIndex;
 import org.apache.rocketmq.common.constant.PermName;
 import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.common.protocol.route.QueueData;
 import org.apache.rocketmq.common.protocol.route.TopicRouteData;
 
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 	缓存Topic的路由信息，避免每次发送消息都查询NameServer
+ *  提供消息队列选择策略，实现负载均衡和故障转移
+ * 	区分普通消息和顺序消息的处理方式
+ */
 public class TopicPublishInfo {
+
+    // 是否为顺序消息 Topic
     private boolean orderTopic = false;
+
+    // 是否包含路由信息
     private boolean haveTopicRouterInfo = false;
+
+    // 可用的消息队列列表
     private List<MessageQueue> messageQueueList = new ArrayList<MessageQueue>();
+
+    // 发送消息时选择的队列索引，使用 ThreadLocal 以支持多线程环境下的负载均衡
     private volatile ThreadLocalIndex sendWhichQueue = new ThreadLocalIndex();
+
+    // 原始路由数据
     private TopicRouteData topicRouteData;
 
     public boolean isOrderTopic() {

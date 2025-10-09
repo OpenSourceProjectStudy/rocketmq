@@ -16,11 +16,11 @@
  */
 package org.apache.rocketmq.store.config;
 
-import java.io.File;
-
 import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.common.annotation.ImportantField;
 import org.apache.rocketmq.store.ConsumeQueue;
+
+import java.io.File;
 
 public class MessageStoreConfig {
 
@@ -204,6 +204,7 @@ public class MessageStoreConfig {
     private int transientStorePoolSize = 5;
     private boolean fastFailIfNoBufferInStorePool = false;
 
+    // 是否启用 DLedger，即是否启用 RocketMQ 主从切换
     private boolean enableDLegerCommitLog = false;
     private String dLegerGroup;
     private String dLegerPeers;
