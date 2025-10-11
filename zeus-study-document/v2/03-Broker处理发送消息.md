@@ -64,12 +64,41 @@ SendMessageProcessor.processRequest
 
 1. 给 MessageExtBrokerInner 设置当前的时间戳， crc 值
 2. 非事务消息 或 事务提交消息 同时设置了延迟级别(定时消息)
-   > 修正延迟级别 (不能超过 Broker 配置的最大延迟级别), 根据延迟级别 - 1 得到存储的队列 id, 将原本的 topic 和队列 ID 存放到消息的属性中
+   > 修正延迟级别 (不能超过 Broker 配置的最大延迟级别), 根据延迟级别 - 1 得到存储的队列 id, 将原本的 topic 和队列 ID
+   存放到消息的属性中
    > 修改消息的 topic 为 SCHEDULE_TOPIC_XXXX, 队列 ID 为上一步得到的存储队列 ID
-3. 从 ThreadLocal 中获取对应的 PutMessageThreadLocal 对象, 把 MessageExtBrokerInner 的内容转为 转为 ByteBuf 放到里面的 MessageExtEncoder.ByteBuf 中 
-4. 获取最新的代表 commitLog 的 MappedFile 对象 (获取不到或文件满了，重新创建一个), 调用其 appendMessage 方法将消息写入 commitLog
+3. 从 ThreadLocal 中获取对应的 PutMessageThreadLocal 对象, 把 MessageExtBrokerInner 的内容转为 转为 ByteBuf 放到里面的
+   MessageExtEncoder.ByteBuf 中
+4. 获取最新的代表 commitLog 的 MappedFile 对象 (获取不到或文件满了，重新创建一个), 调用其 appendMessage 方法将消息写入
+   commitLog
 5. 提交一个刷盘请求
 6. 提交一个主从同步请求
+
+## FlushCommitLogService 实现
+
+CommitRealTimeService (异步刷盘 + 开启写缓冲)
+
+- 定时刷盘, 默认 500 毫秒
+- CommitLog.MappedFileQueue 的 commit (FileChannel.write() 方法将数据写入 page cache)
+- 后续的操作由 FlushRealTimeService 进行操作, 进行落盘
+
+FlushRealTimeService (异步刷盘 + 关闭写缓冲)
+
+- 定时刷盘, 默认 500 毫秒
+- CommitLog.MappedFileQueue 的 flush
+- CommitLog.DefaultMessageStore.StoreCheckpoint 更新其 physicMsgTimestamp
+
+GroupCommitService
+（消息之前已经被 MappedByteBuffer写入了pageCache 了，这里主需要处理一下落盘）
+
+- 添加一个任务到内部的写列表中, 阻塞
+- 内部线程, 每 10ms 唤醒一次(可被其他线程中断)
+- 加锁, 读写队列交互
+- 循环从读队列中获取任务
+- CommitLog.MappedFileQueue 的 flush
+- 设置结果到任务中
+- CommitLog.DefaultMessageStore.StoreCheckpoint 更新其 physicMsgTimestamp
+- 清空读队列
 
 ## 涉及到文件的操作如下
 
@@ -80,3 +109,37 @@ SendMessageProcessor.processRequest
 5. 更新 CheckPoint
 6. 写入 indexFile (如果有 key)
 7. 更新 CheckPoint
+
+## ConsumeQueue
+
+ReputMessageService 1毫秒执行 1 次
+
+本身维护了一个 reputFromOffset 重放偏移量 (关联了 CommitLog 的物理偏移量)
+
+每次执行时
+
+1. 从这个偏移量开始读取到 commitLog 的可读位置的数据
+2. 构建出一个 DispatchRequest 对象
+3. 调用所有的 CommitLogDispatcher 实现，入参为 DispatchRequest 对象 (ConsumeQueue 和 IndexFile 都是在这里写入的)
+4. 开启了长轮询并且角色为主节点, 调用所有的 MessageArrivingListener 实现 (核心: 重新处理 Consumer 消息拉取请求), 如果是从节点,
+   更新统计信息
+
+### CommitLogDispatcherBuildConsumeQueue 处理 ConsumeQueue
+
+1. 获取消息的类型, prepared 消息或者是事务 rollback 消息, 则不进行处理, commit 消息或者非事务消息, 进行处理
+2. 通过 Topic 和 队列 ID 获取对应的 ConsumeQueue 对象
+3. 将详细写入到 ConsumeQueue 中 (每条消息 20 字节, 物理偏移量 8 字节, 消息长度 4 字节, tag hashcode 4 字节, 消息存储时间戳
+   4 字节)
+4. 如果是从从节点或者开启了 DLeger, 更新 checkpoint 文件的 physicMsgTimestamp 为当前时间戳
+5. 更新 checkpoint 文件的 logicsMsgTimestamp 为当前消息的存储时间戳
+
+存储 tags 过滤
+
+### CommitLogDispatcherBuildIndex 处理 IndexFile
+
+1. 是否开启了消息索引 messageIndexEnable (默认开启), 如果没有开启, 直接返回
+2. 获取或创建新的 IndexFile
+3. 获取当前 IndexFile 的最大偏移量, 如果当前消息的物理偏移量小于这个最大偏移量, 则不进行处理
+4. 获取客户端生成的 uniqKey，也被称为 msgId，从逻辑上代表客户端生成的唯一一条消息
+5. 按照 topic + "#" + key 作为 key, 计算出存放到哪个 slot 中 (冲突: 链表模式) http://itsoku.com/article/360
+6. 如果消息还有其他自定义的 key, 逐个按照 topic + "#" + key, 计算出存放到哪个 slot 中, 并存储

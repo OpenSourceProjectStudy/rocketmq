@@ -60,7 +60,7 @@ Index Item 在 Index Linked List 中的位置。
 > 8. 更新 Index File 的 Header 的 indexCount + 1
 
 这个过程没什么问题，但是消息 key 计算 hash 值后，可能会有 hash 冲突，也就是多个 key 计算后的值 % 500w 相同，
-这个时候就会有多个 Index Item 在 Slot Table 的同一个槽上，最新一个的话, 以前的数据就会丢失,
+这个时候就会有多个 Index Item 在 Slot Table 的同一个槽上，只能保存最新一个的话, 以前的数据就会丢失,
 所以需要将原本存放在这个槽的数据 (上一个索引项的位置) 存到当前索引项的 NextIndex offset 中, 串起来。
 
 所以真正的添加索引的过程是:
@@ -80,6 +80,14 @@ Index Item 在 Index Linked List 中的位置。
 > 2. 在 Index Linked List 的对应的位置, 得到 Index Item
 > 3. 如果 Index Item 的 NextIndex offset 不为 0, 继续找下一个直到最后一个的 NextIndex offset 为 0,
 > 4. 通过找到的这些 Index Item 的 CommitLog Offset 到 CommitLog 读取对应的消息, 做最终的 key 精确匹配
+
+
+Index Header + Slot Table + Index Linked List
+
+1. 通过 IndexHeader 获取最后一个消息的偏移位置, 将新消息存放到这个位置后, 同时计算出这个位置的简单位置 （1，2，3, 这种）
+2. key 计算出的 hash 值 % 500w, 得到 Slot Table 的位置, 读取里面保存的上一个 Index Item 在 Index Linked List 的位置
+3. 将当前消息的 preIndex offset 设置为上一步读取到的值
+4. 将 Slot Table 的位置更新为当前消息在 Index Linked List 的位置
 
 ## IndexFile 文件名为时间的设计
 
