@@ -563,6 +563,7 @@ public class MQClientInstance {
     }
 
     private void sendHeartbeatToAllBroker() {
+        // 准备心跳数据
         final HeartbeatData heartbeatData = this.prepareHeartbeatData();
         final boolean producerEmpty = heartbeatData.getProducerDataSet().isEmpty();
         final boolean consumerEmpty = heartbeatData.getConsumerDataSet().isEmpty();
@@ -996,6 +997,7 @@ public class MQClientInstance {
     }
 
     public void rebalanceImmediately() {
+        // 内部设置了沉睡时间 20s, 每次到了自己唤醒
         this.rebalanceService.wakeup();
     }
 
