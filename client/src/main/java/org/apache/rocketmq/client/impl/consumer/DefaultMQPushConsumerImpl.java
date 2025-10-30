@@ -282,7 +282,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
         // 不是顺序消费
         if (!this.consumeOrderly) {
             // 当前队列中最早和最晚 2 个消息的偏差达到了配置值
-            // // 将当前的请求提交到定时线程池, 50 毫秒后再执行
+            // 将当前的请求提交到定时线程池, 50 毫秒后再执行
             if (processQueue.getMaxSpan() > this.defaultMQPushConsumer.getConsumeConcurrentlyMaxSpan()) {
                 this.executePullRequestLater(pullRequest, PULL_TIME_DELAY_MILLS_WHEN_CACHE_FLOW_CONTROL);
                 if ((queueMaxSpanFlowControlTimes++ % 1000) == 0) {

@@ -80,7 +80,7 @@ public class RequestCode {
     public static final int UNREGISTER_CLIENT = 35;
 
     /**
-     * 消费者发送消息会 Broker
+     * 消费者发送消息会 Broker (消费失败时使用)
      */
     public static final int CONSUMER_SEND_MSG_BACK = 36;
 

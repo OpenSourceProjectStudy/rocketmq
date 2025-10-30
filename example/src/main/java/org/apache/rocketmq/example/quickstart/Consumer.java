@@ -69,7 +69,7 @@ public class Consumer {
          */
         consumer.registerMessageListener((MessageListenerConcurrently) (msg, context) -> {
             System.out.printf("%s Receive New Messages: %s %n", Thread.currentThread().getName(), msg);
-            return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
+            return ConsumeConcurrentlyStatus.RECONSUME_LATER;
         });
 
         /*
