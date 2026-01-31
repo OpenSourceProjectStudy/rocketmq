@@ -217,7 +217,7 @@ public class TransactionalMessageBridge {
 
     public boolean putOpMessage(MessageExt messageExt, String opType) {
 
-        // 构建一个 messageQueue，topic 为 half 消息的 topic：固定为 RMQ_SYS_TRANS_HALF_TOPIC，queueId为half 消息的 topic：固定为0，此为对应的 half 消息队列
+        // 构建一个 messageQueue，topic 为 half 消息的 topic：固定为 RMQ_SYS_TRANS_HALF_TOPIC，queueId 为 half 消息的 queueId, 固定为 0
         MessageQueue messageQueue = new MessageQueue(messageExt.getTopic(),
                 this.brokerController.getBrokerConfig().getBrokerName(), messageExt.getQueueId());
         // 如果是 “d”

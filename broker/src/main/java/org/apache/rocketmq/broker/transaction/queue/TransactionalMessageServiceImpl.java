@@ -163,7 +163,8 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
                 // halfOffset >= 最新消费的 halfOffset，需要移除的消息，key：halfOffset，value：opOffset
                 HashMap<Long, Long> removeMap = new HashMap<>();
 
-                // 根据最新已处理的 op 消息队列消费偏移量和 half 消息队列消费偏移量，拉取 op 消息，填充 removeMap 和 doneOpOffset，找出已处理的 half 消息，避免重复发送事物状态回查请求
+                // 根据最新已处理的 op 消息队列消费偏移量和 half 消息队列消费偏移量，拉取 op 消息，填充 removeMap 和 doneOpOffset，找出已处理的 half 消息，
+                // 避免重复发送事物状态回查请求
                 PullResult pullResult = fillOpRemoveMap(removeMap, opQueue, opOffset, halfOffset, doneOpOffset);
                 if (null == pullResult) {
                     // 没拉取到

@@ -35,7 +35,7 @@ public class Producer {
     public static final int MESSAGE_COUNT = 1;
     public static final String PRODUCER_GROUP = "local-test-producer-group";
     public static final String DEFAULT_NAMESRVADDR = "127.0.0.1:9876";
-    public static final String TOPIC = "TopicTest";
+    public static final String TOPIC = "TopicTest223";
     public static final String TAG = "TagA";
 
     public static void main(String[] args) throws MQClientException, InterruptedException {

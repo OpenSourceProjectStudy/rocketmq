@@ -140,7 +140,7 @@ public class MQClientInstance {
     private final RebalanceService rebalanceService;
 
     /**
-     * 一个 MQ 生产者, 暂时看不出在消费者内部的作用
+     * 一个 MQ 生产者, Consumer 用于发送消息
      */
     private final DefaultMQProducer defaultMQProducer;
     private final ConsumerStatsManager consumerStatsManager;

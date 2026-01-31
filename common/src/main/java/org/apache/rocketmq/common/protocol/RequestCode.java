@@ -96,12 +96,12 @@ public class RequestCode {
     public static final int GET_CONSUMER_LIST_BY_GROUP = 38;
 
     /**
-     * Broker 向 Producer 检查事务消息执行结果
+     * 服务端 -> 客户端, Broker 向 Producer 检查事务消息执行结果
      */
     public static final int CHECK_TRANSACTION_STATE = 39;
 
     /**
-     * Broker 通知 Consumer Ids 变化
+     * 服务端 -> 客户端, Broker 通知 Consumer Ids 变化
      * 新的消费者加入消费者组
      * 现有的消费者从消费者组中退出
      */
@@ -169,13 +169,25 @@ public class RequestCode {
 
     public static final int WHO_CONSUME_THE_MESSAGE = 214;
 
+    /**
+     * 删除 Broker 中的 Topic
+     */
     public static final int DELETE_TOPIC_IN_BROKER = 215;
 
+    /**
+     * 删除 Nameserver 中的 Topic
+     */
     public static final int DELETE_TOPIC_IN_NAMESRV = 216;
     public static final int GET_KVLIST_BY_NAMESPACE = 219;
 
+    /**
+     * 服务端 -> 客户端, 重置消费者客户端消费进度
+     */
     public static final int RESET_CONSUMER_CLIENT_OFFSET = 220;
 
+    /**
+     * 服务端 -> 客户端, 获取消费者的状态
+     */
     public static final int GET_CONSUMER_STATUS_FROM_CLIENT = 221;
 
     public static final int INVOKE_BROKER_TO_RESET_OFFSET = 222;
@@ -200,9 +212,16 @@ public class RequestCode {
 
     public static final int CLEAN_EXPIRED_CONSUMEQUEUE = 306;
 
+    /**
+     * 服务端 -> 客户端, 获取消费者的运行状态信息
+     */
     public static final int GET_CONSUMER_RUNNING_INFO = 307;
 
     public static final int QUERY_CORRECTION_OFFSET = 308;
+
+    /**
+     * 服务端 -> 客户端, Broker 直接发送消息给消费者, 消费者直接消费该消息
+     */
     public static final int CONSUME_MESSAGE_DIRECTLY = 309;
 
     /**
@@ -248,10 +267,19 @@ public class RequestCode {
      */
     public static final int RESUME_CHECK_HALF_MESSAGE = 323;
 
+    /**
+     * 生产者发送消息
+     */
     public static final int SEND_REPLY_MESSAGE = 324;
 
+    /**
+     * 生产者发送消息
+     */
     public static final int SEND_REPLY_MESSAGE_V2 = 325;
 
+    /**
+     * 服务端 -> 客户端, 接收 Broker 的回复消息
+     */
     public static final int PUSH_REPLY_MESSAGE_TO_CLIENT = 326;
 
     public static final int ADD_WRITE_PERM_OF_BROKER = 327;
