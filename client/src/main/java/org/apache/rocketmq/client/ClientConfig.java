@@ -79,6 +79,16 @@ public class ClientConfig {
      */
     protected boolean enableStreamRequestType = false;
 
+    /**
+     * The switch for message trace
+     */
+    protected boolean enableTrace = false;
+
+    /**
+     * The name value of message trace topic. If not set, the default trace topic name will be used.
+     */
+    protected String traceTopic;
+
     public String buildMQClientId() {
         StringBuilder sb = new StringBuilder();
         sb.append(this.getClientIP());
@@ -180,6 +190,8 @@ public class ClientConfig {
         this.language = cc.language;
         this.mqClientApiTimeout = cc.mqClientApiTimeout;
         this.enableStreamRequestType = cc.enableStreamRequestType;
+        this.enableTrace = cc.enableTrace;
+        this.traceTopic = cc.traceTopic;
     }
 
     public ClientConfig cloneClientConfig() {
@@ -200,6 +212,8 @@ public class ClientConfig {
         cc.language = language;
         cc.mqClientApiTimeout = mqClientApiTimeout;
         cc.enableStreamRequestType = enableStreamRequestType;
+        cc.enableTrace = enableTrace;
+        cc.traceTopic = traceTopic;
         return cc;
     }
 
@@ -347,6 +361,22 @@ public class ClientConfig {
         this.enableStreamRequestType = enableStreamRequestType;
     }
 
+    public boolean isEnableTrace() {
+        return enableTrace;
+    }
+
+    public void setEnableTrace(boolean enableTrace) {
+        this.enableTrace = enableTrace;
+    }
+
+    public String getTraceTopic() {
+        return traceTopic;
+    }
+
+    public void setTraceTopic(String traceTopic) {
+        this.traceTopic = traceTopic;
+    }
+
     @Override
     public String toString() {
         return "ClientConfig [namesrvAddr=" + namesrvAddr + ", clientIP=" + clientIP + ", instanceName=" + instanceName
@@ -354,6 +384,8 @@ public class ClientConfig {
             + ", heartbeatBrokerInterval=" + heartbeatBrokerInterval + ", persistConsumerOffsetInterval=" + persistConsumerOffsetInterval
             + ", pullTimeDelayMillsWhenException=" + pullTimeDelayMillsWhenException + ", unitMode=" + unitMode + ", unitName=" + unitName + ", vipChannelEnabled="
             + vipChannelEnabled + ", useTLS=" + useTLS + ", language=" + language.name() + ", namespace=" + namespace + ", mqClientApiTimeout=" + mqClientApiTimeout
-            + ", enableStreamRequestType=" + enableStreamRequestType + "]";
+            + ", enableStreamRequestType=" + enableStreamRequestType
+            + ", enableTrace=" + enableTrace + ", traceTopic='" + traceTopic + '\''
+            + "]";
     }
 }
